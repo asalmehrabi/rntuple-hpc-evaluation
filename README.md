@@ -28,11 +28,11 @@ To successfully run the experiments in this repository, the following setup is r
 
 ## Repository Structure
 
-```text
 rntuple-hpc-evaluation/
 ├── LUMI/       # Launcher scripts for LUMI (CSC Finland)
 │               # Also includes modified AGC analysis.py for distributed RDataFrame using Dask queue
 ├── EIGER/      # Launcher scripts for Eiger (CSCS Switzerland)
 ├── MN5/        # Launcher scripts for MareNostrum 5 (BSC Spain), GPP partition
-│               # Also includes code for validation and metrics evaluation
-├── performance_analysis.ipynb  # Notebook for plotting and analyzing performance metrics
+│               # Also includes validation code and metrics processing
+├── performance_analysis.ipynb  # Jupyter notebook for analyzing performance results
+
