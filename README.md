@@ -15,19 +15,19 @@ This thesis evaluates RNTuple performance on modern HPC systems by analyzing how
 
 To successfully run the experiments in this repository, the following setup is required **on each HPC system (LUMI, Eiger, MareNostrum 5)**:
 
-1. ### 🔐 Access to HPC systems
+1. ### Access to HPC systems
    - Valid user credentials and project access for:
      - **LUMI** (CSC Finland)
      - **Eiger** (CSCS Switzerland)
      - **MareNostrum 5** at BSC (GPP partition used)
 
-2. ### 📦 Clone AGC Repository
+2. ### Clone AGC Repository
    On each system, clone the official [Analysis Grand Challenge](https://github.com/root-project/analysis-grand-challenge):
    ```bash
    git clone https://github.com/root-project/analysis-grand-challenge.git
 
 ## Repository Structure
-
+```text
 rntuple-hpc-evaluation/
 ├── LUMI/       # Launcher scripts for LUMI (CSC Finland)
 │               # Also includes modified AGC analysis.py for distributed RDataFrame using Dask queue
