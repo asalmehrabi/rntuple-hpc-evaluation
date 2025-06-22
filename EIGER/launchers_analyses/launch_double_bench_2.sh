@@ -1,0 +1,50 @@
+#!/bin/bash -l
+
+#SBATCH --job-name=root_test
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=128
+#SBATCH --time=02:00:00
+#SBATCH --output=out/output_%j.log
+#SBATCH --error=out/output_%j.err
+#SBATCH --partition=normal
+#SBATCH --account=g166
+
+module load cray
+module switch PrgEnv-cray PrgEnv-gnu
+module load cray-python
+
+source /users/amehrabi/build/bin/thisroot.sh
+export ROOT_INCLUDE_PATH=/users/amehrabi/analysis-grand-challenge/analyses/cms-open-data-ttbar:$ROOT_INCLUDE_PATH
+
+source /users/amehrabi/AGC-venv/bin/activate
+
+base_output_dir="$PWD/performance_output_$(date +%Y%m%d_%H%M%S)"
+mkdir -p $base_output_dir
+
+csv_file="$base_output_dir/performance_results.csv"
+echo "cores,build_time_run1,exec_time_run1,build_time_run2,exec_time_run2" > $csv_file
+
+for cores in 128 64 32 16; do
+    output_dir="$base_output_dir/${cores}_cores"
+    mkdir -p $output_dir
+
+    cp /users/amehrabi/nanoaod_inputs.json $output_dir/
+    cp /users/amehrabi/analysis-grand-challenge/analyses/cms-open-data-ttbar/helpers.h $output_dir/
+
+    cd $output_dir
+
+    export SLURM_CPUS_PER_TASK=$cores
+    results=""
+    
+    for run in 1 2; do
+        srun --cpus-per-task=$cores /users/amehrabi/AGC-venv/bin/python3 /users/amehrabi/AGC/analysis-grand-challenge/analyses/cms-open-data-ttbar/analysis.py --ncores $cores > $output_dir/output_run${run}.log 2> $output_dir/error_run${run}.log
+
+        build_time=$(grep "Building the computation graphs took" $output_dir/output_run${run}.log | awk '{print $6}')
+        exec_time=$(grep "Executing the computation graphs took" $output_dir/output_run${run}.log | awk '{print $6}')
+
+        results="${results},${build_time},${exec_time}"
+    done
+
+    echo "$cores${results}" >> $csv_file
+done
