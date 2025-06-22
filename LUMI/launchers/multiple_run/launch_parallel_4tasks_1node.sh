@@ -1,0 +1,53 @@
+#!/bin/bash
+#SBATCH --job-name=root_test
+#SBATCH --nodes=1
+#SBATCH --ntasks=4
+#SBATCH --cpus-per-task=32
+#SBATCH --time=00:30:00
+#SBATCH --output=output_%j.log
+#SBATCH --error=error_%j.err
+#SBATCH --partition=standard
+#SBATCH --account=project_465001202
+
+BASE_OUTPUT_DIR="$PWD/output_$(date +%Y%m%d_%H%M%S)"
+mkdir -p $BASE_OUTPUT_DIR
+
+cat << 'EOF' > $BASE_OUTPUT_DIR/worker.sh
+#!/bin/bash
+
+TASK_ID=$1
+BASE_OUTPUT_DIR=$2
+
+OUTPUT_DIR="$BASE_OUTPUT_DIR/task_$TASK_ID"
+mkdir -p $OUTPUT_DIR
+
+module load PrgEnv-cray
+module switch PrgEnv-cray PrgEnv-gnu
+module load cray-python/3.9.12.1
+module load LUMI/22.08 lumi-container-wrapper
+
+source /users/mehrabia/build/bin/thisroot.sh
+
+export ROOT_INCLUDE_PATH=/users/mehrabia/AGC/analysis-grand-challenge/analyses/cms-open-data-ttbar:$ROOT_INCLUDE_PATH
+
+cp /scratch/project_465001202/rntuple-rc2/nanoaod_inputs.json $OUTPUT_DIR/
+cp /users/mehrabia/AGC/analysis-grand-challenge/analyses/cms-open-data-ttbar/helpers.h $OUTPUT_DIR/
+
+cd $OUTPUT_DIR
+find /scratch/project_465001202/rntuple-rc2/nanoAOD/ -type f -exec /project/project_465001202/fadvise -a dontneed {} \;
+find /scratch/project_465001202/rntuple-rc2/nanoAOD/ -type f -exec /project/project_465001202/mincore {} +
+srun /users/mehrabia/AGC-venv/bin/python3 /users/mehrabia/AGC/analysis-grand-challenge/analyses/cms-open-data-ttbar/analysis.py > $OUTPUT_DIR/output.log 2> $OUTPUT_DIR/error.log
+hostname > hostname.txt
+EOF
+
+chmod +x $BASE_OUTPUT_DIR/worker.sh
+
+
+for j in {1..4}; do
+    srun --exclusive -N1 -n1 $BASE_OUTPUT_DIR/worker.sh $j $BASE_OUTPUT_DIR &
+done
+
+wait
+
+echo "DONE."
+
